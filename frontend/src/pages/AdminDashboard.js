@@ -8,14 +8,12 @@ export default function AdminDashboard() {
   const [attendance, setAttendance] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
 
-  // โหลดข้อมูลตอน mount
   useEffect(() => {
     fetchUsers();
     fetchLeaves();
     fetchAttendance();
   }, []);
 
-  // ดึง user ทั้งหมด
   const fetchUsers = async () => {
     try {
       const res = await API.get("/admin/users");
@@ -26,7 +24,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // ดึง leave requests ที่รอดำเนินการ
   const fetchLeaves = async () => {
     try {
       const res = await API.get("/admin/leave/pending");
@@ -37,10 +34,9 @@ export default function AdminDashboard() {
     }
   };
 
-  // ดึง attendance ของทุกคน
   const fetchAttendance = async () => {
     try {
-      const res = await API.get("/admin/attendance/all"); // ต้องสร้าง endpoint ใน backend
+      const res = await API.get("/admin/attendance/all");
       setAttendance(res.data);
     } catch (err) {
       console.error(err);
@@ -48,7 +44,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Approve leave
   const approve = async (id) => {
     try {
       await API.put(`/admin/leave/${id}/approve`);
@@ -59,7 +54,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Reject leave
   const reject = async (id) => {
     try {
       await API.put(`/admin/leave/${id}/reject`);
@@ -70,15 +64,10 @@ export default function AdminDashboard() {
     }
   };
 
-  // เริ่มแก้ไข username
-  const startEdit = (user) => {
-    setEditingUser({ ...user });
-  };
+  const startEdit = (user) => setEditingUser({ ...user });
 
-  // บันทึก username
   const saveEdit = async () => {
     if (!editingUser || !editingUser.username.trim()) return;
-
     try {
       await API.put(`/admin/users/${editingUser.id}`, { username: editingUser.username });
       setEditingUser(null);
@@ -90,10 +79,8 @@ export default function AdminDashboard() {
     }
   };
 
-  // ลบ user
   const deleteUser = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
-
     try {
       await API.delete(`/admin/users/${id}`);
       fetchUsers();
@@ -104,29 +91,68 @@ export default function AdminDashboard() {
     }
   };
 
-  // แปลงวันที่
   const formatDate = (dateValue) => {
     if (!dateValue) return "-";
     const d = new Date(dateValue);
     return isNaN(d.getTime()) ? "-" : d.toLocaleDateString();
   };
 
-  // แปลงเวลาสำหรับแสดง
   const formatDateTime = (dateValue) => {
     if (!dateValue) return "-";
     const d = new Date(dateValue);
     return isNaN(d.getTime()) ? "-" : d.toLocaleString();
   };
 
+  // สรุปข้อมูล attendance
+  const summary = {
+    totalClockIn: 0,
+    totalClockOut: 0,
+    totalAbsent: 0,
+    totalLeave: 0,
+  };
+
+  attendance.forEach((a) => {
+    if (a.clockIn) summary.totalClockIn += 1;
+    if (a.clockOut) summary.totalClockOut += 1;
+    if (a.status === "Absent") summary.totalAbsent += 1;
+    if (a.status === "Leave") summary.totalLeave += 1;
+  });
+
+  const cardGradient = "linear-gradient(135deg, #a593e6, #ffb6c1)";
+
   return (
-    <div>
+    <div className="bg-light">
       <Navbar />
       <div className="container py-5">
-        <h2 className="mb-4">Admin Dashboard</h2>
+        <h2 className="mb-4 text-center fw-bold" style={{ color: "#6a11cb" }}>Admin Dashboard</h2>
+
+        {/* Summary Cards */}
+        <div className="row mb-4">
+          {[
+            { title: "Clock In", value: summary.totalClockIn },
+            { title: "Clock Out", value: summary.totalClockOut },
+            { title: "Absent", value: summary.totalAbsent },
+            { title: "Leave", value: summary.totalLeave },
+          ].map((card) => (
+            <div key={card.title} className="col-md-3 mb-3">
+              <div
+                className="card text-white text-center shadow-lg"
+                style={{ background: cardGradient, borderRadius: "1rem" }}
+              >
+                <div className="card-body">
+                  <h5 className="card-title">{card.title}</h5>
+                  <p className="card-text fs-3">{card.value}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
 
         {/* Pending Leave Requests */}
-        <div className="card mb-5">
-          <div className="card-header bg-primary text-white">Pending Leave Requests</div>
+        <div className="card mb-5 shadow-sm">
+          <div className="card-header" style={{ background: "#a593e6", color: "white" }}>
+            Pending Leave Requests
+          </div>
           <div className="card-body p-0">
             <table className="table mb-0">
               <thead className="table-light">
@@ -165,8 +191,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* All Users */}
-        <div className="card mb-5">
-          <div className="card-header bg-secondary text-white">All Users</div>
+        <div className="card mb-5 shadow-sm">
+          <div className="card-header" style={{ background: "#ffb6c1", color: "white" }}>
+            All Users
+          </div>
           <ul className="list-group list-group-flush">
             {users.length > 0 ? (
               users.map((u) => (
@@ -180,7 +208,6 @@ export default function AdminDashboard() {
                   ) : (
                     <span>{u.username} ({u.role})</span>
                   )}
-
                   <div>
                     {editingUser?.id === u.id ? (
                       <button className="btn btn-sm btn-success me-2" onClick={saveEdit} disabled={!editingUser.username.trim()}>Save</button>
@@ -197,9 +224,11 @@ export default function AdminDashboard() {
           </ul>
         </div>
 
-        {/* All Attendance Records */}
-        <div className="card">
-          <div className="card-header bg-info text-white">Attendance Records</div>
+        {/* Attendance Records */}
+        <div className="card shadow-sm">
+          <div className="card-header" style={{ background: "#6a11cb", color: "white" }}>
+            Attendance Records
+          </div>
           <div className="card-body p-0">
             <table className="table mb-0">
               <thead className="table-light">
