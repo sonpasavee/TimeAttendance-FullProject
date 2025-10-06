@@ -23,73 +23,107 @@ export default function Register() {
     }
   };
 
-  return (
-    <section className="vh-100" style={{ backgroundColor: "#508bfc" }}>
-      <div className="container py-5 h-100">
-        <div className="row d-flex justify-content-center align-items-center h-100">
-          <div className="col-12 col-md-8 col-lg-6 col-xl-5">
-            <div className="card shadow-2-strong" style={{ borderRadius: "1rem" }}>
-              <div className="card-body p-5 text-center">
-                <h3 className="mb-5 text-black">Sign Up</h3>
-                <form onSubmit={handleSubmit}>
-                  <div className="form-outline mb-4">
-                    <input
-                      type="text"
-                      className="form-control form-control-lg"
-                      placeholder="Username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      required
-                    />
-                  </div>
+return (
+  <section
+    className="d-flex justify-content-center align-items-center"
+    style={{
+      height: "100vh",
+      background: "linear-gradient(to bottom, #a593e6ff, #ffb6c1)",
+    }}
+  >
+    <div
+      className="card shadow-lg border-0 d-flex flex-row"
+      style={{
+        borderRadius: "1rem",
+        overflow: "hidden",
+        width: "800px",
+        maxWidth: "95%",
+        height: "500px",
+        boxShadow: "0 10px 30px rgba(106, 17, 203, 0.3)",
+      }}
+    >
+      {/* ฝั่งซ้าย: รูป + โลโก้ */}
+      <div className="d-none d-md-block position-relative" style={{ flex: 1 }}>
+        <img
+          src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f"
+          alt="login"
+          className="h-100 w-100"
+          style={{ objectFit: "cover" }}
+        />
+        <img
+          src="/logo Attenda.png"
+          alt="Logo"
+          style={{
+            position: "absolute",
+            top: "20px",
+            left: "20px",
+            width: "75px",
+            height: "auto",
+            padding: "5px",
+          }}
+        />
+      </div>
 
-                  <div className="form-outline mb-4">
-                    <input
-                      type="email"
-                      className="form-control form-control-lg"
-                      placeholder="Email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-outline mb-4">
-                    <input
-                      type="password"
-                      className="form-control form-control-lg"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* Optional: Role selector */}
-                  <div className="form-outline mb-4">
-                    <select
-                      className="form-select form-select-lg"
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                    >
-                      <option value="USER">User</option>
-                      <option value="ADMIN">Admin</option>
-                    </select>
-                  </div>
-
-                  <button type="submit" className="btn btn-primary btn-lg btn-block mb-3">
-                    Register
-                  </button>
-
-                  <div className="mt-4 text-center text-white">
-                    Already have an account? <a href="/login" className="text-decoration-none ms-1">Login</a>
-                  </div>
-                </form>
-              </div>
+      {/* ฝั่งขวา: ฟอร์ม */}
+      <div
+        className="d-flex align-items-center justify-content-center"
+        style={{ flex: 1, padding: "2rem" }}
+      >
+        <div style={{ width: "100%", maxWidth: "350px" }}>
+          <h1 className="mb-4 fw-bold text-center">Sign Up</h1>
+          <form onSubmit={handleSubmit}>
+            <input
+              type="text"
+              className="form-control form-control-lg mb-3"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+            <input
+              type="email"
+              className="form-control form-control-lg mb-3"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              type="password"
+              className="form-control form-control-lg mb-3"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <select
+              className="form-select form-select-lg mb-4"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="USER">User</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+            <button
+              type="submit"
+              className="btn btn-lg w-100 mb-3 text-white"
+              style={{
+                background: "linear-gradient(90deg, #6a11cb, #ff6fd8)",
+                border: "none",
+              }}
+            >
+              Register
+            </button>
+            <div className="text-center text-muted">
+              Already have an account?{" "}
+              <a href="/login" className="text-decoration-none fw-bold" style={{ color: "#6a11cb" }}>
+                Login
+              </a>
             </div>
-          </div>
+          </form>
         </div>
       </div>
-    </section>
-  );
+    </div>
+  </section>
+);
 }
