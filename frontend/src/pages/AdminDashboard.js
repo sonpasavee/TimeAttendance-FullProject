@@ -1,21 +1,32 @@
 import React, { useEffect, useState } from "react";
 import API from "../api/api";
 import Navbar from "../components/Navbar";
+import {
+  FaUserAlt,
+  FaUserCheck,
+  FaUserTimes,
+  FaRegClock,
+  FaCalendarTimes,
+  FaCalendarCheck,
+  FaBan,
+  FaEdit,
+  FaSave,
+  FaTrash,
+} from "react-icons/fa";
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [leaves, setLeaves] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
+  const [rejectedCount, setRejectedCount] = useState(0);
 
-  // โหลดข้อมูลตอน mount
   useEffect(() => {
     fetchUsers();
     fetchLeaves();
     fetchAttendance();
   }, []);
 
-  // ดึง user ทั้งหมด
   const fetchUsers = async () => {
     try {
       const res = await API.get("/admin/users");
@@ -26,7 +37,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // ดึง leave requests ที่รอดำเนินการ
   const fetchLeaves = async () => {
     try {
       const res = await API.get("/admin/leave/pending");
@@ -37,10 +47,9 @@ export default function AdminDashboard() {
     }
   };
 
-  // ดึง attendance ของทุกคน
   const fetchAttendance = async () => {
     try {
-      const res = await API.get("/admin/attendance/all"); // ต้องสร้าง endpoint ใน backend
+      const res = await API.get("/admin/attendance/all");
       setAttendance(res.data);
     } catch (err) {
       console.error(err);
@@ -48,168 +57,179 @@ export default function AdminDashboard() {
     }
   };
 
-  // Approve leave
+  // Approve Leave
   const approve = async (id) => {
     try {
       await API.put(`/admin/leave/${id}/approve`);
-      fetchLeaves();
-      fetchAttendance(); // ✅ ดึง attendance ใหม่ให้ summary อัปเดต
+      const approvedLeave = leaves.find((l) => l.id === id);
+      if (approvedLeave) {
+        const newAttendance = {
+          id: `leave-${id}`,
+          username: approvedLeave.username,
+          date: approvedLeave.startDate,
+          clockIn: null,
+          clockOut: null,
+          status: "Leave",
+          method: "-",
+          location: "-",
+        };
+        setAttendance((prev) => [...prev, newAttendance]);
+      }
+      setLeaves((prev) => prev.filter((l) => l.id !== id));
+      alert("✅ Leave approved and added to attendance!");
     } catch (err) {
       console.error(err);
       alert("Failed to approve leave");
     }
   };
 
-  // Reject leave
+  // Reject Leave
   const reject = async (id) => {
     try {
       await API.put(`/admin/leave/${id}/reject`);
-      fetchLeaves();
+      setLeaves((prev) => prev.filter((l) => l.id !== id));
+      setRejectedCount((prev) => prev + 1);
+      alert("❌ Leave rejected!");
     } catch (err) {
       console.error(err);
       alert("Failed to reject leave");
     }
   };
 
-  // เริ่มแก้ไข username
-  const startEdit = (user) => {
-    setEditingUser({ ...user });
-  };
+  const startEdit = (user) => setEditingUser({ ...user });
 
-  // บันทึก username
   const saveEdit = async () => {
     if (!editingUser || !editingUser.username.trim()) return;
-
     try {
-      await API.put(`/admin/users/${editingUser.id}`, { username: editingUser.username });
+      await API.put(`/admin/users/${editingUser.id}`, {
+        username: editingUser.username,
+      });
       setEditingUser(null);
       fetchUsers();
-      alert("User updated successfully");
+      alert("✅ User updated successfully");
     } catch (err) {
       console.error(err);
       alert("Failed to update user");
     }
   };
 
-  // ลบ user
   const deleteUser = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
-
     try {
       await API.delete(`/admin/users/${id}`);
       fetchUsers();
-      alert("User deleted successfully");
+      alert("🗑️ User deleted successfully");
     } catch (err) {
       console.error(err);
       alert("Failed to delete user");
     }
   };
 
-  // แปลงวันที่
   const formatDate = (dateValue) => {
     if (!dateValue) return "-";
     const d = new Date(dateValue);
     return isNaN(d.getTime()) ? "-" : d.toLocaleDateString();
   };
 
-  // แปลงเวลาสำหรับแสดง
   const formatDateTime = (dateValue) => {
     if (!dateValue) return "-";
     const d = new Date(dateValue);
     return isNaN(d.getTime()) ? "-" : d.toLocaleString();
   };
 
-  // สรุปข้อมูล attendance
   const summary = {
-    totalClockIn: 0,
-    totalClockOut: 0,
-    totalAbsent: 0,
-    totalLeave: 0,
+    totalClockIn: attendance.filter((a) => a.clockIn).length,
+    totalClockOut: attendance.filter((a) => a.clockOut).length,
+    
+    totalLeave: attendance.filter((a) => a.status === "Leave").length,
   };
 
-  attendance.forEach((a) => {
-    if (a.clockIn) summary.totalClockIn += 1;
-    if (a.clockOut) summary.totalClockOut += 1;
-    if (a.status === "Absent") summary.totalAbsent += 1;
-    if (a.status === "Leave") summary.totalLeave += 1;
-  });
-
-const normalUsers = users.filter(u => u.role && u.role.toLowerCase() !== "admin");
-const totalNormalUsers = normalUsers.length;
-
+  const normalUsers = users.filter(
+    (u) => u.role && u.role.toLowerCase() !== "admin"
+  );
+  const totalNormalUsers = normalUsers.length;
 
   return (
-    <div>
+    <div style={{ backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
       <Navbar />
       <div className="container py-5">
-        <h2 className="mb-4">Admin Dashboard</h2>
+        <h2 className="mb-4 text-center fw-bold text-primary">
+          <FaUserAlt className="me-2" />
+          Admin Dashboard
+        </h2>
 
-<div className="row mb-4">  <div className="col">
-    <div className="card text-center">
-      <div className="card-body">
-        <h5 className="card-title">Total Users</h5>
-        <p className="card-text fs-3">{totalNormalUsers}</p>
-      </div>
-    </div>
-  </div>
-
-  <div className="col">
-    <div className="card text-center">
-      <div className="card-body">
-        <h5 className="card-title">Clock In</h5>
-        <p className="card-text fs-3">{summary.totalClockIn}</p>
-      </div>
-    </div>
-  </div>
-
-  <div className="col">
-    <div className="card text-center">
-      <div className="card-body">
-        <h5 className="card-title">Clock Out</h5>
-        <p className="card-text fs-3">{summary.totalClockOut}</p>
-      </div>
-    </div>
-  </div>
-
-  <div className="col">
-    <div className="card text-center">
-      <div className="card-body">
-        <h5 className="card-title">Absent</h5>
-        <p className="card-text fs-3">{summary.totalAbsent}</p>
-      </div>
-    </div>
-  </div>
-
-  <div className="col">
-    <div className="card text-center">
-      <div className="card-body">
-        <h5 className="card-title">Leave</h5>
-        <p className="card-text fs-3">{summary.totalLeave}</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-
+        {/* ✅ Summary Cards */}
+        <div className="row g-4 mb-5">
+          {[
+            {
+              title: "Total Users",
+              value: totalNormalUsers,
+              icon: <FaUserAlt />,
+              color: "primary",
+            },
+            {
+              title: "Clock In",
+              value: summary.totalClockIn,
+              icon: <FaRegClock />,
+              color: "success",
+            },
+            {
+              title: "Clock Out",
+              value: summary.totalClockOut,
+              icon: <FaUserCheck />,
+              color: "info",
+            },
+            {
+              title: "Leave",
+              value: summary.totalLeave,
+              icon: <FaCalendarCheck />,
+              color: "secondary",
+            },
+            {
+              title: "Rejected Leave",
+              value: rejectedCount,
+              icon: <FaBan />,
+              color: "danger",
+            },
+          ].map((card, i) => (
+            <div key={i} className="col-md-4 col-lg-2 col-6">
+              <div
+                className={`card text-center shadow border-0 bg-${card.color} bg-opacity-10`}
+              >
+                <div className="card-body">
+                  <div
+                    className={`text-${card.color} fs-2 mb-2`}
+                    style={{ lineHeight: "1" }}
+                  >
+                    {card.icon}
+                  </div>
+                  <h6 className="fw-semibold">{card.title}</h6>
+                  <h3 className="fw-bold">{card.value}</h3>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
 
         {/* Pending Leave Requests */}
-        <div className="card mb-5">
-          <div className="card-header bg-primary text-white">Pending Leave Requests</div>
+        <div className="card shadow-lg mb-5 border-0">
+          <div className="card-header bg-gradient bg-primary text-white fw-bold">
+            Pending Leave Requests
+          </div>
           <div className="card-body p-0">
-            <table className="table mb-0">
-              <thead className="table-light">
+            <table className="table table-hover align-middle mb-0">
+              <thead className="table-light text-center">
                 <tr>
                   <th>User</th>
                   <th>Reason</th>
-                  <th>Start Date</th>
-                  <th>End Date</th>
-                  <th>Created At</th>
-                  <th>Action</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Requested At</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {leaves.length > 0 ? (
+              <tbody className="text-center">
+                {leaves.length ? (
                   leaves.map((l) => (
                     <tr key={l.id}>
                       <td>{l.username}</td>
@@ -218,14 +238,26 @@ const totalNormalUsers = normalUsers.length;
                       <td>{formatDate(l.endDate)}</td>
                       <td>{formatDateTime(l.createdAt)}</td>
                       <td>
-                        <button className="btn btn-success btn-sm me-2" onClick={() => approve(l.id)}>Approve</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => reject(l.id)}>Reject</button>
+                        <button
+                          className="btn btn-success btn-sm me-2"
+                          onClick={() => approve(l.id)}
+                        >
+                          <FaCalendarCheck /> Approve
+                        </button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => reject(l.id)}
+                        >
+                          <FaCalendarTimes /> Reject
+                        </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="text-center">No pending requests</td>
+                    <td colSpan="6" className="py-3 text-muted">
+                      No pending requests
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -234,44 +266,75 @@ const totalNormalUsers = normalUsers.length;
         </div>
 
         {/* All Users */}
-        <div className="card mb-5">
-          <div className="card-header bg-secondary text-white">All Users</div>
+        <div className="card shadow-lg mb-5 border-0">
+          <div className="card-header bg-gradient bg-secondary text-white fw-bold">
+            All Users
+          </div>
           <ul className="list-group list-group-flush">
-            {users.length > 0 ? (
+            {users.length ? (
               users.map((u) => (
-                <li key={u.id} className="list-group-item d-flex justify-content-between align-items-center">
+                <li
+                  key={u.id}
+                  className="list-group-item d-flex justify-content-between align-items-center"
+                >
                   {editingUser?.id === u.id ? (
                     <input
                       className="form-control me-2"
                       value={editingUser.username}
-                      onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value })}
+                      onChange={(e) =>
+                        setEditingUser({
+                          ...editingUser,
+                          username: e.target.value,
+                        })
+                      }
                     />
                   ) : (
-                    <span>{u.username} ({u.role})</span>
+                    <span>
+                      <strong>{u.username}</strong> <small>({u.role})</small>
+                    </span>
                   )}
 
                   <div>
                     {editingUser?.id === u.id ? (
-                      <button className="btn btn-sm btn-success me-2" onClick={saveEdit} disabled={!editingUser.username.trim()}>Save</button>
+                      <button
+                        className="btn btn-success btn-sm me-2"
+                        onClick={saveEdit}
+                      >
+                        <FaSave /> Save
+                      </button>
                     ) : (
-                      <button className="btn btn-sm btn-primary me-2" onClick={() => startEdit(u)}>Edit</button>
+                      <button
+                        className="btn btn-primary btn-sm me-2"
+                        onClick={() => startEdit(u)}
+                      >
+                        <FaEdit /> Edit
+                      </button>
                     )}
-                    <button className="btn btn-sm btn-danger" onClick={() => deleteUser(u.id)}>Delete</button>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => deleteUser(u.id)}
+                    >
+                      <FaTrash /> Delete
+                    </button>
                   </div>
                 </li>
               ))
             ) : (
-              <li className="list-group-item text-center">No users found</li>
+              <li className="list-group-item text-center text-muted">
+                No users found
+              </li>
             )}
           </ul>
         </div>
 
-        {/* All Attendance Records */}
-        <div className="card">
-          <div className="card-header bg-info text-white">Attendance Records</div>
+        {/* Attendance Records */}
+        <div className="card shadow-lg border-0">
+          <div className="card-header bg-gradient bg-info text-white fw-bold">
+            Attendance Records
+          </div>
           <div className="card-body p-0">
-            <table className="table mb-0">
-              <thead className="table-light">
+            <table className="table table-striped table-hover align-middle mb-0">
+              <thead className="table-light text-center">
                 <tr>
                   <th>User</th>
                   <th>Date</th>
@@ -282,32 +345,45 @@ const totalNormalUsers = normalUsers.length;
                   <th>Location</th>
                 </tr>
               </thead>
-              <tbody>
-                {attendance.length > 0 ? (
+              <tbody className="text-center">
+                {attendance.length ? (
                   attendance.map((a) => (
                     <tr key={a.id}>
                       <td>{a.username}</td>
                       <td>{formatDate(a.date)}</td>
                       <td>{formatDateTime(a.clockIn)}</td>
                       <td>{formatDateTime(a.clockOut)}</td>
-                      <td>{a.status}</td>
+                      <td>
+                        <span
+                          className={`badge rounded-pill ${
+                            a.status === "Present"
+                              ? "bg-success"
+                              : a.status === "Late"
+                              ? "bg-warning text-dark"
+                              : a.status === "Leave"
+                              ? "bg-secondary"
+                              : "bg-danger"
+                          }`}
+                        >
+                          {a.status}
+                        </span>
+                      </td>
                       <td>{a.method}</td>
                       <td>{a.location}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="text-center">No attendance records</td>
+                    <td colSpan="7" className="py-3 text-muted">
+                      No attendance records
+                    </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
         </div>
-
       </div>
     </div>
-
-
   );
 }
