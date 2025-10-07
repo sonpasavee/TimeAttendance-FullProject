@@ -53,6 +53,7 @@ export default function AdminDashboard() {
     try {
       await API.put(`/admin/leave/${id}/approve`);
       fetchLeaves();
+      fetchAttendance(); // ✅ ดึง attendance ใหม่ให้ summary อัปเดต
     } catch (err) {
       console.error(err);
       alert("Failed to approve leave");
@@ -118,11 +119,79 @@ export default function AdminDashboard() {
     return isNaN(d.getTime()) ? "-" : d.toLocaleString();
   };
 
+  // สรุปข้อมูล attendance
+  const summary = {
+    totalClockIn: 0,
+    totalClockOut: 0,
+    totalAbsent: 0,
+    totalLeave: 0,
+  };
+
+  attendance.forEach((a) => {
+    if (a.clockIn) summary.totalClockIn += 1;
+    if (a.clockOut) summary.totalClockOut += 1;
+    if (a.status === "Absent") summary.totalAbsent += 1;
+    if (a.status === "Leave") summary.totalLeave += 1;
+  });
+
+const normalUsers = users.filter(u => u.role && u.role.toLowerCase() !== "admin");
+const totalNormalUsers = normalUsers.length;
+
+
   return (
     <div>
       <Navbar />
       <div className="container py-5">
         <h2 className="mb-4">Admin Dashboard</h2>
+
+<div className="row mb-4">  <div className="col">
+    <div className="card text-center">
+      <div className="card-body">
+        <h5 className="card-title">Total Users</h5>
+        <p className="card-text fs-3">{totalNormalUsers}</p>
+      </div>
+    </div>
+  </div>
+
+  <div className="col">
+    <div className="card text-center">
+      <div className="card-body">
+        <h5 className="card-title">Clock In</h5>
+        <p className="card-text fs-3">{summary.totalClockIn}</p>
+      </div>
+    </div>
+  </div>
+
+  <div className="col">
+    <div className="card text-center">
+      <div className="card-body">
+        <h5 className="card-title">Clock Out</h5>
+        <p className="card-text fs-3">{summary.totalClockOut}</p>
+      </div>
+    </div>
+  </div>
+
+  <div className="col">
+    <div className="card text-center">
+      <div className="card-body">
+        <h5 className="card-title">Absent</h5>
+        <p className="card-text fs-3">{summary.totalAbsent}</p>
+      </div>
+    </div>
+  </div>
+
+  <div className="col">
+    <div className="card text-center">
+      <div className="card-body">
+        <h5 className="card-title">Leave</h5>
+        <p className="card-text fs-3">{summary.totalLeave}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
 
         {/* Pending Leave Requests */}
         <div className="card mb-5">
@@ -238,5 +307,7 @@ export default function AdminDashboard() {
 
       </div>
     </div>
+
+
   );
 }
